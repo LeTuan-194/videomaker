@@ -8,11 +8,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "next build"
+    "vercel-build": "next build",
+    "poll": "node scripts/telegram-polling.js"
   },
   "dependencies": {
     "@fal-ai/client": "^1.2.0",
     "@remotion/player": "^4.0.420",
+    "dotenv": "^17.4.2",
     "jszip": "^3.10.1",
     "next": "^15.0.0",
     "react": "^19.0.0",

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { fal } from '@fal-ai/client';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const API_BASE = `https://api.telegram.org/bot${BOT_TOKEN}`;
@@ -60,12 +61,26 @@ async function skillHelp(chatId) {
 }
 
 async function skillStatus(chatId) {
+  // Test FAL connection
+  let falStatus = "❌ Unknown";
+  try {
+    const key = process.env.FAL_KEY;
+    if (key) {
+      falStatus = "✅ Configured";
+    } else {
+      falStatus = "❌ Not configured";
+    }
+  } catch (error) {
+    falStatus = "❌ Error";
+  }
+
   const stats = {
     total_requests: Math.floor(Math.random() * 100),
     videos_generated: Math.floor(Math.random() * 50),
     active_users: Math.floor(Math.random() * 20),
     uptime: "Online",
-    ai_provider: "Fal.ai"
+    ai_provider: "Fal.ai",
+    fal_status: falStatus
   };
 
   return {
@@ -74,6 +89,7 @@ async function skillStatus(chatId) {
 
 🤖 *Trạng thái:* ${stats.uptime}
 🌐 *AI Provider:* ${stats.ai_provider}
+🔑 *FAL Status:* ${stats.fal_status}
 📈 *Total Requests:* ${stats.total_requests}
 🎬 *Videos Generated:* ${stats.videos_generated}
 👥 *Active Users:* ${stats.active_users}
@@ -118,7 +134,13 @@ async function handleVideoGeneration(chatId, topic) {
     });
 
     if (!planResponse.ok) {
-      throw new Error('Failed to plan video');
+      const errorData = await planResponse.json().catch(() => ({}));
+      console.error('Plan API error:', planResponse.status, errorData);
+      
+      // Fallback to mock response for demo
+      await sendMessage(chatId, `⚠️ API hiện đang gặp vấn đề (error ${planResponse.status}).`);
+      await sendMessage(chatId, `📋 *Demo Video Plan* (Mock Response)\n\n1. Giới thiệu sản phẩm\n2. Tính năng chính\n3. Lợi ích người dùng\n4. So sánh\n5. Kết luận\n\n💡 Để test full video generation, hãy sử dụng web UI tại http://localhost:3000 hoặc kiểm tra FAL_KEY của bạn.`);
+      return;
     }
 
     const plan = await planResponse.json();
@@ -130,7 +152,7 @@ async function handleVideoGeneration(chatId, topic) {
 
   } catch (error) {
     console.error('Video generation error:', error);
-    await sendMessage(chatId, `❌ Lỗi khi tạo video: ${error.message}\n\nVui lòng thử lại.`);
+    await sendMessage(chatId, `❌ Lỗi khi tạo video: ${error.message}\n\n💡 Gợi ý: Truy cập http://localhost:3000 để test trực tiếp với web UI.`);
   }
 }
 

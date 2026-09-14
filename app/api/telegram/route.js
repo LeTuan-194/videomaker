@@ -52,6 +52,7 @@ async function skillHelp(chatId) {
 • /help - Xem trợ giúp này
 • /ping - Kiểm tra trạng thái bot
 • /status - Xem thống kê sử dụng
+• /test - Test kết nối FAL.AI
 
 💡 *Mẹo:*
 • Càng chi tiết mô tả, video càng đẹp
@@ -66,6 +67,7 @@ async function skillStatus(chatId) {
   try {
     const key = process.env.FAL_KEY;
     if (key) {
+      fal.config({ credentials: key });
       falStatus = "✅ Configured";
     } else {
       falStatus = "❌ Not configured";
@@ -98,6 +100,45 @@ async function skillStatus(chatId) {
   };
 }
 
+async function skillTest(chatId) {
+  let testResult = "❌ Failed";
+  try {
+    const key = process.env.FAL_KEY;
+    if (!key) {
+      return {
+        success: false,
+        message: "❌ FAL_KEY not configured in .env.local"
+      };
+    }
+    
+    fal.config({ credentials: key });
+    
+    // Simple test with basic model
+    const result = await fal.subscribe('meta-llama/Meta-Llama-3.1-8B-Instruct', {
+      input: {
+        system_prompt: 'You are a helpful assistant.',
+        prompt: 'Say "Hello!" in one word.',
+      },
+      logs: false,
+    });
+    
+    const output = result?.output || result?.data?.output || 'No output';
+    testResult = `✅ Success - Output: "${output}"`;
+    
+  } catch (error) {
+    testResult = `❌ Error: ${error.message}`;
+  }
+
+  return {
+    success: true,
+    message: `🧪 *FAL.AI Connection Test*
+
+${testResult}
+
+💡 Nếu test thất bại, hãy kiểm tra FAL_KEY của bạn tại: https://fal.ai/dashboard/keys`
+  };
+}
+
 // Main skill router
 async function handleSkillCommand(command, chatId) {
   const cmd = command.toLowerCase().replace(/\//g, '');
@@ -109,6 +150,8 @@ async function handleSkillCommand(command, chatId) {
       return await skillHelp(chatId);
     case 'status':
       return await skillStatus(chatId);
+    case 'test':
+      return await skillTest(chatId);
     default:
       return {
         success: false,
